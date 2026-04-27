@@ -230,11 +230,22 @@ def extract_rich_text(prop: dict[str, Any] | None) -> str:
 
 
 def extract_select(prop: dict[str, Any] | None) -> str:
+    """Return option names from either select or multi_select Notion properties."""
     if not prop:
         return ""
+
     select_value = prop.get("select")
     if isinstance(select_value, dict):
         return select_value.get("name", "")
+
+    multi_select_value = prop.get("multi_select")
+    if isinstance(multi_select_value, list):
+        return ", ".join(
+            item.get("name", "")
+            for item in multi_select_value
+            if isinstance(item, dict) and item.get("name")
+        )
+
     return ""
 
 
@@ -274,13 +285,12 @@ def fetch_recent_articles(limit: int = LOOKBACK_LIMIT) -> list[ExistingArticle]:
 def build_notion_properties(article: CandidateArticle) -> dict[str, Any]:
     important_text = "\n".join(f"・{point}" for point in article.important_points[:3])
     return {
-        PROP_CHECKPOINT: {"checkbox": False},
         PROP_TITLE: {"title": [{"text": {"content": article.title[:2000]}}]},
         PROP_DATE: {"date": {"start": article.date}},
         PROP_IMPORTANT_POINTS: {"rich_text": [{"text": {"content": important_text[:2000]}}]},
-        PROP_CATEGORY: {"select": {"name": article.category}},
+        PROP_CATEGORY: {"multi_select": [{"name": article.category}]},
         PROP_URL: {"url": article.url},
-        PROP_RELIABILITY: {"select": {"name": article.reliability}},
+        PROP_RELIABILITY: {"multi_select": [{"name": article.reliability}]},
     }
 
 
