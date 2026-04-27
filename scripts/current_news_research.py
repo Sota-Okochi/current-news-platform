@@ -14,7 +14,7 @@ import sys
 import time
 from importlib import import_module
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
@@ -61,6 +61,7 @@ OPENAI_MAX_OUTPUT_TOKENS = int(os.getenv("OPENAI_MAX_OUTPUT_TOKENS", "3500"))
 ARTICLES_PER_RUN = int(os.getenv("ARTICLES_PER_RUN", "3"))
 LOOKBACK_LIMIT = int(os.getenv("LOOKBACK_LIMIT", "12"))
 CANDIDATE_COUNT = int(os.getenv("CANDIDATE_COUNT", "9"))
+RECENT_DAYS = int(os.getenv("RECENT_DAYS", "31"))
 TIMEZONE = os.getenv("TIMEZONE", os.getenv("TZ", "Asia/Tokyo"))
 NOTION_VERSION = os.getenv("NOTION_VERSION", "2022-06-28")
 
@@ -356,7 +357,9 @@ def candidate_schema_hint() -> str:
 
 
 def build_research_prompt(existing: list[ExistingArticle], need_count: int, candidate_count: int) -> str:
-    current_date = now_jst().strftime("%Y-%m-%d")
+    current_dt = now_jst()
+    current_date = current_dt.strftime("%Y-%m-%d")
+    cutoff_date = (current_dt.date() - timedelta(days=RECENT_DAYS)).isoformat()
     existing_payload = [
         {
             "title": item.title,
@@ -523,7 +526,21 @@ def is_valid_candidate(article: CandidateArticle) -> tuple[bool, str]:
     if len(article.important_points) < 3:
         return False, "important_points must contain 3 items"
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", article.date):
-        article.date = now_jst().strftime("%Y-%m-%d")
+        return False, f"invalid date format: {article.date}"
+
+    try:
+        article_date = datetime.strptime(article.date, "%Y-%m-%d").date()
+    except ValueError:
+        return False, f"invalid date value: {article.date}"
+
+    today = now_jst().date()
+    cutoff = today - timedelta(days=RECENT_DAYS)
+
+    if article_date < cutoff:
+        return False, f"article date is older than {RECENT_DAYS} days: {article.date}"
+    if article_date > today:
+        return False, f"article date is in the future: {article.date}"
+
     return True, "ok"
 
 

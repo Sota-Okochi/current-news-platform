@@ -43,6 +43,7 @@ jobs:
           ARTICLES_PER_RUN: "5"
           LOOKBACK_LIMIT: "30"
           CANDIDATE_COUNT: "12"
+          RECENT_DAYS: "31"
           OPENAI_MAX_OUTPUT_TOKENS: "6000"
           TZ: "Asia/Tokyo"
         run: python scripts/current_news_research.py
