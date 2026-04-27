@@ -39,8 +39,9 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4.1-mini' }}
-          ARTICLES_PER_RUN: "3"
-          LOOKBACK_LIMIT: "12"
+          OPENAI_MODEL: "gpt-5.5"
+          ARTICLES_PER_RUN: "5"
+          LOOKBACK_LIMIT: "30"
+          CANDIDATE_COUNT: "12"
           TZ: "Asia/Tokyo"
         run: python scripts/current_news_research.py
